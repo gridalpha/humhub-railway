@@ -46,6 +46,21 @@ fi
 export HUMHUB_WEB_CONFIG__COMPONENTS__REQUEST__TRUSTED_HOSTS
 
 #----------------------------------------------------------------------
+# Console installer
+#
+# humhub\modules\installer\commands\InstallController documents itself as
+# `php yii installer/...`, but the installer module's config.php registers no
+# consoleControllerMap entry (checked on 1.18.5), so the route does not exist
+# and the CLI answers "Unknown command: installer/install-db". Register the
+# controller on the console application instead - HUMHUB_CLI_CONFIG__* is
+# merged into the console config only.
+#----------------------------------------------------------------------
+if [ -z "${HUMHUB_CLI_CONFIG__CONTROLLER_MAP__INSTALLER:-}" ]; then
+    HUMHUB_CLI_CONFIG__CONTROLLER_MAP__INSTALLER='humhub\modules\installer\commands\InstallController'
+fi
+export HUMHUB_CLI_CONFIG__CONTROLLER_MAP__INSTALLER
+
+#----------------------------------------------------------------------
 # Public base URL - used for mail links and as the Mercure hub URL
 #----------------------------------------------------------------------
 BASE_URL="${HUMHUB_BASE_URL:-}"
