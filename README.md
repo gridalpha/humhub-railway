@@ -4,7 +4,7 @@
 [Railway](https://railway.com).
 
 It is the official `humhub/humhub` image plus one boot wrapper. The wrapper is
-set as the service start command and ends by exec'ing the image's own
+the image's `CMD` and ends by exec'ing upstream's own untouched
 `/docker-entrypoint.sh`, so FrankenPHP, the cron scheduler and the queue workers
 still start exactly as upstream ships them.
 
@@ -17,6 +17,7 @@ still start exactly as upstream ships them.
 | Startup order | Polls the database with one PDO connection before touching a migration — Railway has no service start ordering. |
 | First boot | Runs `installer/install-db`, `write-site-config`, `create-admin-account` and `set-base-url` before the listener opens, so the public URL never serves an unclaimed setup wizard. |
 | Defaults | Seeds the SMTP settings and the registration policy **once**, leaving every later change in the admin UI alone. |
+| Collation | Aligns any table MySQL 8/9 created on `utf8mb4_0900_ai_ci` with the database's own collation, which HumHub's prerequisite check otherwise reports. |
 
 ## Environment variables
 

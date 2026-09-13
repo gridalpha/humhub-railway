@@ -2,8 +2,8 @@
 #
 # Railway boot wrapper for the official HumHub image.
 #
-# Set as the service start command; it ends by exec'ing the image's own
-# /docker-entrypoint.sh, which is left untouched. It covers the four things a
+# This is the image CMD. It ends by exec'ing upstream's own
+# /docker-entrypoint.sh, which is left untouched, and covers the four things a
 # Railway deployment needs that the stock image leaves to the operator:
 #
 #   1. FrankenPHP listens on Railway's $PORT over plain HTTP - the edge
@@ -12,7 +12,8 @@
 #   3. On the first boot it completes the installation non-interactively, so
 #      the public URL never serves an unclaimed setup wizard.
 #   4. It seeds the SMTP and registration defaults once, leaving every later
-#      change to the admin UI alone.
+#      change to the admin UI alone, and keeps every table on the database's
+#      own collation.
 #
 set -uo pipefail
 
@@ -99,10 +100,18 @@ is_installed() {
 }
 
 #----------------------------------------------------------------------
+# Keep every table on the database's own collation - see the script header
+#----------------------------------------------------------------------
+normalize_collation() {
+    php /app/bin/railway-normalize-collation.php
+}
+
+#----------------------------------------------------------------------
 # First boot: install without the web wizard
 #----------------------------------------------------------------------
 if is_installed; then
     log "HumHub is already installed"
+    normalize_collation
     if [ -n "${HUMHUB_BASE_URL:-}" ]; then
         /app/yii installer/set-base-url "$HUMHUB_BASE_URL"
     fi
@@ -124,6 +133,7 @@ else
     fi
 
     /app/yii installer/install-db || die "installer/install-db failed"
+    normalize_collation
     /app/yii installer/write-site-config "$SITE_NAME" "$SYSTEM_EMAIL" \
         || die "installer/write-site-config failed"
     /app/yii installer/create-admin-account "$ADMIN_USERNAME" "$ADMIN_EMAIL" "$ADMIN_PASSWORD" \
